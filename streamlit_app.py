@@ -1,40 +1,33 @@
-import altair as alt
-import numpy as np
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import csv
+from pathlib import Path
 
-"""
-# Welcome to Streamlit!
+st.set_page_config(layout="wide", page_title="CSV Quoter")
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+st.write("## Upload your unquoted csv file and quote it")
+st.write(
+    ":dog: Sometime CSV uploads fail if the file is unquoted. Upload your unquoted csv file to quote it. Source available [here](https://github.com/shankararul/csv-quoter/) on GitHub.")
+st.sidebar.write("## Upload and Quote it :gear:")
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+def quote_file(my_upload):
+    df = pd.read_csv(my_upload)
+    quoted= df.to_csv(quoting=csv.QUOTE_ALL, index=False)
+    st.sidebar.markdown("\n")
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
+    st.download_button("Download Quoted file", quoted, file_name = "quoted.csv", mime="application/octet-stream", type='primary',use_container_width= True)
+    st.write(df)
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+my_upload = st.sidebar.file_uploader("Upload your unquoted CSV File", type=["csv", "txt"])
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
+if my_upload is not None:
+    if my_upload.size > MAX_FILE_SIZE:
+        st.error("The uploaded file is too large. Please upload an image smaller than 5MB.")
+    else:
+        quote_file(my_upload)
+        
 
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+else:
+    quote_file("./unquoted.csv")
